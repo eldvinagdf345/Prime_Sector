@@ -10,6 +10,7 @@ from bot.keyboards import (
     admin_buttons_kb,
     admin_menu_kb,
     admin_messages_kb,
+    cancel_edit_kb,
 )
 from bot.states import AdminEdit
 
@@ -36,7 +37,8 @@ async def cb_admin_price(callback: CallbackQuery, state: FSMContext) -> None:
     settings = await get_settings()
     await state.set_state(AdminEdit.price)
     await callback.message.edit_text(
-        f"Текущая цена: {settings['price']} руб.\nВведи новую цену числом (только цифры):"
+        f"Текущая цена: {settings['price']} руб.\nВведи новую цену числом (только цифры):",
+        reply_markup=cancel_edit_kb("admin_panel"),
     )
     await callback.answer()
 
@@ -57,7 +59,8 @@ async def cb_admin_open_link(callback: CallbackQuery, state: FSMContext) -> None
     await state.set_state(AdminEdit.open_link)
     await callback.message.edit_text(
         f"Текущая ссылка на открытый канал:\n{settings['open_channel_link']}\n\n"
-        "Пришли новую ссылку:"
+        "Пришли новую ссылку:",
+        reply_markup=cancel_edit_kb("admin_panel"),
     )
     await callback.answer()
 
@@ -79,7 +82,8 @@ async def cb_admin_product_link(callback: CallbackQuery, state: FSMContext) -> N
     await state.set_state(AdminEdit.product_link)
     await callback.message.edit_text(
         f"Текущая ссылка на закрытый канал (продукт):\n{settings['product_channel_link']}\n\n"
-        "Пришли новую ссылку:"
+        "Пришли новую ссылку:",
+        reply_markup=cancel_edit_kb("admin_panel"),
     )
     await callback.answer()
 
@@ -112,7 +116,8 @@ async def cb_admin_btn_edit(callback: CallbackQuery, state: FSMContext) -> None:
     await state.set_state(AdminEdit.text_field)
     await state.update_data(key=key, return_to="buttons")
     await callback.message.edit_text(
-        f"Текущий текст кнопки {BUTTON_SETTING_KEYS[key]}: {settings[key]}\n\nПришли новый текст:"
+        f"Текущий текст кнопки {BUTTON_SETTING_KEYS[key]}: {settings[key]}\n\nПришли новый текст:",
+        reply_markup=cancel_edit_kb("admin:buttons"),
     )
     await callback.answer()
 
@@ -138,7 +143,8 @@ async def cb_admin_msg_edit(callback: CallbackQuery, state: FSMContext) -> None:
         "Пришли новый текст. Можно выделить жирным/курсивом/подчёркиванием через "
         "форматирование Telegram (выдели текст при наборе и нажми Ж/К/etc), "
         "а если у тебя Telegram Premium — можно вставить премиум-эмодзи. "
-        "Всё это сохранится как есть."
+        "Всё это сохранится как есть.",
+        reply_markup=cancel_edit_kb("admin:messages"),
     )
     await callback.answer()
 
