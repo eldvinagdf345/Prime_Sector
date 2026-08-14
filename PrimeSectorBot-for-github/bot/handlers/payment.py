@@ -37,12 +37,11 @@ async def cb_pay(callback: CallbackQuery) -> None:
     price = float(settings["price"])
     user = callback.from_user
 
-    username_str = f"@{user.username}" if user.username else "no username"
     try:
         result = await create_transaction(
             payment_method=payment_method,
             amount=price,
-            description=f"Доступ Prime Sector, user {user.id} ({username_str})",
+            description="Доступ навсегда",
             payload=str(user.id),
         )
     except PlategaError:
