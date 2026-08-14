@@ -7,6 +7,7 @@ from aiogram.types import CallbackQuery
 from bot.config import CURRENCY, POLL_INTERVAL_SECONDS, POLL_MAX_ATTEMPTS
 from bot.database import (
     create_order,
+    get_admin_chat_ids,
     get_order,
     get_settings,
     mark_order_confirmed_once,
@@ -72,15 +73,38 @@ async def cb_pay(callback: CallbackQuery) -> None:
     asyncio.create_task(_poll_payment(callback.bot, transaction_id))
 
 
-async def _deliver_access(bot: Bot, chat_id: int, transaction_id: str) -> None:
+async def _notify_admins_payment(bot: Bot, order: dict, status_data: dict) -> None:
+    admin_ids = await get_admin_chat_ids()
+    if not admin_ids:
+        return
+
+    buyer = f"@{order['username']}" if order["username"] else f"id:{order['user_id']}"
+    amount_rub = order["amount"]
+    amount_usd = status_data.get("amountUsdt")
+    if amount_usd is not None:
+        sum_text = f"{amount_rub:.0f} руб (≈{amount_usd:.2f} $)"
+    else:
+        sum_text = f"{amount_rub:.0f} руб"
+
+    text = f"✅ Успешная оплата\n👤 Покупатель: {buyer}\n💵 Сумма: {sum_text}"
+    for admin_id in admin_ids:
+        try:
+            await bot.send_message(admin_id, text)
+        except Exception:
+            continue
+
+
+async def _deliver_access(bot: Bot, transaction_id: str, status_data: dict) -> None:
     if not await mark_order_confirmed_once(transaction_id):
         return  # уже выдали доступ ранее
+    order = await get_order(transaction_id)
     settings = await get_settings()
     await bot.send_message(
-        chat_id,
+        order["chat_id"],
         settings["welcome_access_text"],
         reply_markup=enter_channel_kb(settings),
     )
+    await _notify_admins_payment(bot, order, status_data)
 
 
 async def _poll_payment(bot: Bot, transaction_id: str) -> None:
@@ -97,7 +121,7 @@ async def _poll_payment(bot: Bot, transaction_id: str) -> None:
 
         status = data.get("status")
         if status == "CONFIRMED":
-            await _deliver_access(bot, order["chat_id"], transaction_id)
+            await _deliver_access(bot, transaction_id, data)
             return
         if status in ("CANCELED", "CHARGEBACKED"):
             await update_order_status(transaction_id, status)
@@ -125,7 +149,7 @@ async def cb_check_payment(callback: CallbackQuery) -> None:
 
     status = data.get("status")
     if status == "CONFIRMED":
-        await _deliver_access(callback.bot, order["chat_id"], transaction_id)
+        await _deliver_access(callback.bot, transaction_id, data)
         await callback.answer("Оплата подтверждена!")
     elif status in ("CANCELED", "CHARGEBACKED"):
         await update_order_status(transaction_id, status)
