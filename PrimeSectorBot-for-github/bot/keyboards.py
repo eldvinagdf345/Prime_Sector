@@ -48,6 +48,12 @@ def enter_channel_kb(settings: dict) -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
+def cancel_edit_kb(back_to: str) -> InlineKeyboardMarkup:
+    builder = InlineKeyboardBuilder()
+    builder.button(text="❌ Отмена", callback_data=back_to)
+    return builder.as_markup()
+
+
 def admin_menu_kb() -> InlineKeyboardMarkup:
     builder = InlineKeyboardBuilder()
     builder.button(text="💰 Изменить цену", callback_data="admin:price")
